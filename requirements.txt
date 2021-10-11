@@ -1,0 +1,7 @@
+python-binance
+pytest
+unicorn-binance-websocket-api
+eth-brownie
+waiting
+func_timeout
+tronpy
