@@ -26,9 +26,9 @@ lock = threading.Lock()
 
 class DexSwap(object):
     def __init__(self, _log, login=True):
-        self.init_gas_price = 230000000000
-        self.gas_price = 230000000000
-        self.max_gas_price = 250000000000
+        self.init_gas_price = 120000000000
+        self.gas_price = 120000000000
+        self.max_gas_price = 2600000000000
 
         self.init(login)
         self.log = _log
@@ -223,9 +223,8 @@ class DexSwap(object):
         return int(time.time())
 
     def reset_gas_price(self):
-        if self.gas_price > self.init_gas_price:
-            self.gas_price = self.init_gas_price
-            network.gas_price(self.gas_price)
+        self.gas_price = self.init_gas_price
+        network.gas_price(self.gas_price)
 
     @func_set_timeout(80)
     def transfer(self, to, amount, call_data):
@@ -313,16 +312,26 @@ class DexSwap(object):
             self.log.logger.info('dex sell fail: {}'.format(str(e)))
             if 'underpriced' in str(e):
                 self.gas_price = self.gas_price * 1.1
-                print('new gas price={}'.format(self.gas_price))
+                print('new gas price= {} gwei'.format(self.gas_price / 10 ** 9))
                 if self.gas_price > self.max_gas_price:
                     self.gas_price = self.max_gas_price / 2
+                    self.reconnect()
                 network.gas_price(self.gas_price)
-            gasfee = 33834 * self.gas_price / 10 ** 18
             amount_out = 0
             succeed = False
-            if hasattr(e, 'txid'):
-                tx = chain.get_transaction(e.txid)
-                gasfee = tx.gas_price * tx.gas_used / 10 ** 18
+            if 'maxFeePerGas' in str(e):
+                gasfee = 0
+                revert_msg = str(e)
+                pos1 = revert_msg.find('baseFee:') + 8
+                pos2 = revert_msg.find('(supplied')
+                base_fee = revert_msg[pos1:pos2]
+                self.gas_price = int(base_fee) * 1.2
+                network.gas_price(self.gas_price)
+                print('new gas price= {} gwei'.format(self.gas_price / 10 ** 9))
+            elif 'INSUFFICIENT_OUTPUT_AMOUNT' in str(e):
+                gasfee = 0
+            else:
+                gasfee = self.gas_price * 39672 / 10 ** 18
         except func_timeout.exceptions.FunctionTimedOut:
             print('{} sell {} time out'.format(dexname, base_asset + quote_asset))
             time.sleep(2)
@@ -410,13 +419,23 @@ class DexSwap(object):
                 print('new gas price={}'.format(self.gas_price))
                 if self.gas_price > self.max_gas_price:
                     self.gas_price = self.max_gas_price / 2
+                    self.reconnect()
                 network.gas_price(self.gas_price)
-            gasfee = 33834 * self.gas_price / 10 ** 18
             amount_out = 0
             succeed = False
-            if hasattr(e, 'txid'):
-                tx = chain.get_transaction(e.txid)
-                gasfee = tx.gas_price * tx.gas_used / 10 ** 18
+            if 'maxFeePerGas' in str(e):
+                gasfee = 0
+                revert_msg = str(e)
+                pos1 = revert_msg.find('baseFee:') + 8
+                pos2 = revert_msg.find('(supplied')
+                base_fee = revert_msg[pos1:pos2]
+                self.gas_price = int(base_fee) * 1.2
+                network.gas_price(self.gas_price)
+                print('new gas price= {} gwei'.format(self.gas_price / 10 ** 9))
+            elif 'INSUFFICIENT_OUTPUT_AMOUNT' in str(e):
+                gasfee = 0
+            else:
+                gasfee = self.gas_price * 39672 / 10 ** 18
         except func_timeout.exceptions.FunctionTimedOut:
             print('{} sell {} time out'.format(dexname, base_asset + quote_asset))
             time.sleep(2)
@@ -577,13 +596,23 @@ class DexSwap(object):
                 print('new gas price={}'.format(self.gas_price))
                 if self.gas_price > self.max_gas_price:
                     self.gas_price = self.max_gas_price / 2
+                    self.reconnect()
                 network.gas_price(self.gas_price)
-            gasfee = 33834 * self.gas_price / 10 ** 18
             amount_out = 0
             succeed = False
-            if hasattr(e, 'txid'):
-                tx = chain.get_transaction(e.txid)
-                gasfee = tx.gas_price * tx.gas_used / 10 ** 18
+            if 'maxFeePerGas' in str(e):
+                gasfee = 0
+                revert_msg = str(e)
+                pos1 = revert_msg.find('baseFee:') + 8
+                pos2 = revert_msg.find('(supplied')
+                base_fee = revert_msg[pos1:pos2]
+                self.gas_price = int(base_fee) * 1.2
+                network.gas_price(self.gas_price)
+                print('new gas price= {} gwei'.format(self.gas_price / 10 ** 9))
+            elif 'INSUFFICIENT_OUTPUT_AMOUNT' in str(e):
+                gasfee = 0
+            else:
+                gasfee = self.gas_price * 39672 / 10 ** 18
         except func_timeout.exceptions.FunctionTimedOut:
             print('{} sell {} time out'.format(dexname, base_asset + quote_asset))
             time.sleep(2)
@@ -676,13 +705,23 @@ class DexSwap(object):
                 print('new gas price={}'.format(self.gas_price))
                 if self.gas_price > self.max_gas_price:
                     self.gas_price = self.max_gas_price / 2
+                    self.reconnect()
                 network.gas_price(self.gas_price)
-            gasfee = 33834 * self.gas_price / 10 ** 18
             amount_out = 0
             succeed = False
-            if hasattr(e, 'txid'):
-                tx = chain.get_transaction(e.txid)
-                gasfee = tx.gas_price * tx.gas_used / 10 ** 18
+            if 'maxFeePerGas' in str(e):
+                gasfee = 0
+                revert_msg = str(e)
+                pos1 = revert_msg.find('baseFee:') + 8
+                pos2 = revert_msg.find('(supplied')
+                base_fee = revert_msg[pos1:pos2]
+                self.gas_price = int(base_fee) * 1.2
+                network.gas_price(self.gas_price)
+                print('new gas price= {} gwei'.format(self.gas_price / 10 ** 9))
+            elif 'INSUFFICIENT_OUTPUT_AMOUNT' in str(e):
+                gasfee = 0
+            else:
+                gasfee = self.gas_price * 39672 / 10 ** 18
         except func_timeout.exceptions.FunctionTimedOut:
             print('{} buy {} time out'.format(dexname, base_asset + quote_asset))
             time.sleep(2)
@@ -758,7 +797,7 @@ class DexSwap(object):
 
     @func_set_timeout(28)
     def do_transfer(self, amount):
-        tx = self.acct.transfer('0xF4A6D62A53283BF4076416E79c5f04c9d75a7216', amount, required_confs=1)
+        tx = self.acct.transfer('0x10425CcBDAF89A7b9Ff67A5053501CD0ea1397C4', amount, required_confs=1)
         return tx
 
     def transfer_avax(self, amount):
@@ -839,5 +878,9 @@ class DexSwap(object):
 
 if __name__ == "__main__":
     log = Logger('all.log',level='debug')
-    dex_swap = DexSwap(log, True)
-    print(dex_swap.get_precision())
+    # dex_swap = DexSwap(log, True)
+    # print(dex_swap.get_precision())
+    # dex_swap.approve_joexyz_router('BNB')
+    # dex_swap.approve_joexyz_router('AAVE')
+    # dex_swap.approve_pangolin_router('QI')
+    # dex_swap.approve_joexyz_router('QI')

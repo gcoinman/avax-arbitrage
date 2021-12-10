@@ -18,6 +18,7 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 parent_path = os.path.dirname(file_path)
 sys.path.append(parent_path)
 from arbitrage.config import *
+from arbitrage.key import *
 from binance.client import Client
 from unicorn_binance_websocket_api.unicorn_binance_websocket_api_manager import BinanceWebSocketApiManager
 import threading
@@ -52,12 +53,15 @@ class BinanceMarket(object):
 
     def init_borrow_limit(self):
         self.borrow_limits = {}
+        self.borrow_enables = {}
         self.last_reset_update_times = {}
+        self.last_reset_update_borrow_enable_time = 0
         for asset in assets:
             if asset in spot_assets:
                 continue
             self.borrow_limits[asset] = 0
             self.last_reset_update_times[asset] = 0
+        self.borrow_enables = self.get_borrow_enables()
 
     def reset_bal_reduce(self):
         for asset in assets:
@@ -80,13 +84,23 @@ class BinanceMarket(object):
 
 
     def create_client(self):
-        self.public = 'Jw3uUtZjmoye0Fs01lyTY9QxO59RmSN200KAZGxLEXMFDSAaXZDM4TtOs5Ewuxey'
-        self.secret = 'AaXfunWRnJTPKqeWHuDf4E5QvbVFCN7YuQocd0nANRqEvl5rRPQxhO1NJNhP1mmE'
+        self.public = key_public
+        self.secret = key_secret
         self.client = Client(self.public, self.secret)
+
+    def get_borrow_enables(self):
+        current_reset_update_time = time.time()
+        if current_reset_update_time - self.last_reset_update_borrow_enable_time < 200:
+            return self.borrow_enables
+        self.last_reset_update_borrow_enable_time = current_reset_update_time
+        response = self.client._request_margin_api('get', 'margin/allAssets', signed=True, data={})
+        for data in response:
+            self.borrow_enables[data['assetName']] = data['isBorrowable']
+        return self.borrow_enables
 
     def margin_get_borrow_limit(self, asset):
         current_reset_update_time = time.time()
-        if current_reset_update_time - self.last_reset_update_times[asset] < 20:
+        if current_reset_update_time - self.last_reset_update_times[asset] < 30:
             return self.borrow_limits[asset]
         self.last_reset_update_times[asset] = current_reset_update_time
         response = self.client.get_max_margin_loan(
@@ -94,6 +108,20 @@ class BinanceMarket(object):
             timestamp=self._timestamp()
         )
         self.borrow_limits[asset] = float(response['amount'])
+        borrow_enables = self.get_borrow_enables()
+        if not borrow_enables[asset]:
+            self.borrow_limits[asset] = 0
+        return self.borrow_limits[asset]
+        
+    def borrow_limit(self, asset):
+        response = self.client.get_max_margin_loan(
+            asset=asset,
+            timestamp=self._timestamp()
+        )
+        self.borrow_limits[asset] = float(response['amount'])
+        borrow_enables = self.get_borrow_enables()
+        if not borrow_enables[asset]:
+            self.borrow_limits[asset] = 0
         return self.borrow_limits[asset]
 
     def margin_borrow_asset(self, asset, amount):
@@ -158,10 +186,12 @@ class BinanceMarket(object):
                     amount = round_down(free_bal, precis[1])
                 else:
                     if not self.margin_borrow_asset(asset, bamount):
+                        borrow_limit = self.borrow_limit(asset)
+                        if borrow_limit < bamount:
+                            failed = True
+                            return
                         self.log.logger.info('margin borrow {} failed'.format(asset))
-                        failed = True
-                        return
-                        # raise Exception('margin borrow {} failed'.format(asset))
+                        raise Exception('margin borrow {} failed'.format(asset))
             order = self.client.create_margin_order(
                 symbol=asset + 'USDT',
                 side=self.client.SIDE_SELL,

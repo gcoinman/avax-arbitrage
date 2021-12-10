@@ -4,10 +4,11 @@ from os import path
 parent_path = os.path.dirname(os.getcwd())
 sys.path.append(parent_path)
 from arbitrage.config import *
+from arbitrage.key import *
 from binance.client import Client
 import time
-public = 'Jw3uUtZjmoye0Fs01lyTY9QxO59RmSN200KAZGxLEXMFDSAaXZDM4TtOs5Ewuxey'
-secret = 'AaXfunWRnJTPKqeWHuDf4E5QvbVFCN7YuQocd0nANRqEvl5rRPQxhO1NJNhP1mmE'
+public = key_public
+secret = key_secret
 client = Client(public, secret)
 
 wallet = 'X-avax109720ndy68598nrpdz2h5h677v39spgh66r4sf'

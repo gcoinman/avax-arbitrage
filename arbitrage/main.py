@@ -64,7 +64,7 @@ threadpool = ThreadPoolExecutor(max_workers=thread_count)
 tasks = {}
 
 total_profit = 0
-avax_buy_price = 1
+avax_buy_price = 100
 
 def main_new_arbitrage(dex_side, base_asset, quote_asset, amount_in, output_amount, dexname):
     global total_profit
@@ -510,6 +510,14 @@ def main():
             dex_swap.check_status()
             dex_swap.update_information()
             l = clear_complete_task(tasks)
+            min_profit1 = 169009 * dex_swap.gas_price / 10 ** 18 * avax_buy_price
+            if min_profit1 < 0.5:
+                print(min_profit1)
+                print(dex_swap.gas_price / 10 ** 18)
+                print('min_profit1 < 0.5, wrong!!!!')
+                dex_swap.reset_gas_price()
+                time.sleep(1)
+                continue
             if l == 0:
                 dex_swap.reset_bal_reduce()
                 binance.reset_bal_reduce()
